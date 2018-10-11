@@ -43,6 +43,7 @@
  *        which is very hard unless the layout of the object is fully
  *        specified.
  */
+
 #if defined(__GNUC__)
 #  define jl_signal_fence() __atomic_signal_fence(__ATOMIC_SEQ_CST)
 #  define jl_atomic_fetch_add_relaxed(obj, arg)         \

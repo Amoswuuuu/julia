@@ -449,7 +449,7 @@ function enq_work(t::Task)
         tid = Threads.threadid()
     end
     push!(Workqueues[tid], t)
-    tid == 1 && ccall(:uv_stop, Cvoid, (Ptr{Cvoid},), eventloop())
+    ccall(:jl_uv_stop, Cvoid, (Ptr{Cvoid},), eventloop())
     return t
 end
 
