@@ -1097,10 +1097,11 @@ JL_DLLEXPORT int jl_queue_work(work_cb_t work_func, void *work_args, void *work_
 
 JL_DLLEXPORT void jl_uv_stop(uv_loop_t* loop)
 {
-    JL_UV_LOCK();
-    uv_stop(loop);
-    // TODO: use memory/compiler fence here instead of the lock
-    JL_UV_UNLOCK();
+    if (jl_mutex_trylock_nogc(&jl_uv_mutex)) {
+        uv_stop(loop);
+        // TODO: use memory/compiler fence here instead of the lock
+        JL_UV_UNLOCK();
+    }
 }
 
 JL_DLLEXPORT void jl_uv_update_time(uv_loop_t* loop)

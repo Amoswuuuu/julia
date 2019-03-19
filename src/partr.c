@@ -227,8 +227,8 @@ JL_DLLEXPORT void jl_wakeup_thread(int16_t tid)
         uv_mutex_unlock(&sleep_lock);
     }
     /* stop the event loop too, if on thread 1 and alerting thread 1 */
-    if (ptls->tid == 0 && (tid == 0 || tid == -1))
-        uv_stop(jl_global_event_loop());
+    //if (ptls->tid == 0 && (tid == 0 || tid == -1))
+    uv_stop(jl_global_event_loop());
 }
 
 
@@ -260,9 +260,9 @@ JL_DLLEXPORT jl_task_t *jl_task_get_next(jl_value_t *getsticky)
         if (task)
             return task;
 
-        if (ptls->tid == 0) {
+        if (1) {//ptls->tid == 0) {
             if (!_threadedregion) {
-                if (jl_run_once(jl_global_event_loop()) == 0) {
+                if (jl_process_events(jl_global_event_loop()) == 0) {
                     task = get_next_task(getsticky);
                     if (task)
                         return task;
