@@ -440,6 +440,8 @@ function show_method_candidates(io::IO, ex::MethodError, @nospecialize kwargs=()
                 end
                 if ex.world < reinterpret(UInt, method.primary_world)
                     print(iob, " (method too new to be called from this world context.)")
+                elseif ex.world > reinterpret(UInt, method.deleted_world)
+                    print(iob, " (method deleted before this world age.)")
                 end
                 # TODO: indicate if it's in the wrong world
                 push!(lines, (buf, right_matches))

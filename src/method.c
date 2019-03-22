@@ -586,6 +586,7 @@ JL_DLLEXPORT jl_method_t *jl_new_method_uninit(jl_module_t *module)
     m->isva = 0;
     m->nargs = 0;
     m->primary_world = 1;
+    m->deleted_world = ~(size_t)0;
     JL_MUTEX_INIT(&m->writelock);
     return m;
 }

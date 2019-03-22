@@ -1462,7 +1462,7 @@ JL_DLLEXPORT void jl_method_table_disable(jl_methtable_t *mt, jl_method_t *metho
     jl_typemap_entry_t *methodentry = do_typemap_search(mt, method);
     JL_LOCK(&mt->writelock);
     // Narrow the world age on the method to make it uncallable
-    methodentry->max_world = jl_world_counter++;
+    method->deleted_world = methodentry->max_world = jl_world_counter++;
     // Recompute ambiguities (deleting a more specific method might reveal ambiguities that it previously resolved)
     (void)check_ambiguous_matches(mt->defs, methodentry, check_disabled_ambiguous_visitor); // TODO: decrease repeated work?
     // drop this method from mt->cache
@@ -1494,7 +1494,7 @@ JL_DLLEXPORT void jl_method_table_insert(jl_methtable_t *mt, jl_method_t *method
     JL_LOCK(&mt->writelock);
     jl_typemap_entry_t *newentry = jl_typemap_insert(&mt->defs, (jl_value_t*)mt,
             (jl_tupletype_t*)type, simpletype, jl_emptysvec, (jl_value_t*)method, 0, &method_defs,
-            method->primary_world, ~(size_t)0, &oldvalue);
+            method->primary_world, method->deleted_world, &oldvalue);
     if (oldvalue) {
         if (oldvalue == (jl_value_t*)method) {
             // redundant add of same method; no need to do anything

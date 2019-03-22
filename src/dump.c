@@ -1664,6 +1664,7 @@ static jl_value_t *jl_deserialize_value_method(jl_serializer_state *s, jl_value_
     m->file = (jl_sym_t*)jl_deserialize_value(s, NULL);
     m->line = read_int32(s->s);
     m->primary_world = jl_world_counter;
+    m->deleted_world = ~(size_t)0;
     m->ambig = jl_deserialize_value(s, (jl_value_t**)&m->ambig);
     jl_gc_wb(m, m->ambig);
     m->called = read_int32(s->s);
@@ -2223,10 +2224,19 @@ static void jl_insert_backedges(jl_array_t *list, arraylist_t *dependent_worlds)
             // verify that this backedge doesn't intersect with any new methods
             size_t min_valid = 0;
             size_t max_valid = ~(size_t)0;
-            jl_value_t *matches = jl_matching_methods((jl_tupletype_t*)sig, /*TODO?*/50, 1, jl_world_counter, &min_valid, &max_valid);
+            jl_value_t *matches = jl_matching_methods((jl_tupletype_t*)sig, -1, 1, 0, &min_valid, &max_valid);
             if (matches == jl_false)
                 valid = 0;
-            valid = (lowerbound_dependent_world_set(min_valid, dependent_worlds) == min_valid);
+            size_t k;
+            for (k = 0; valid && k < jl_array_len(matches); k++) {
+                jl_method_t *m = (jl_method_t*)jl_svecref(jl_array_ptr_ref(matches, k), 2);
+                int wasactive = (lowerbound_dependent_world_set(m->primary_world, dependent_worlds) == m->primary_world);
+                int nowactive = (m->deleted_world == ~(size_t)0);
+                if (wasactive != nowactive) {
+                    // intersection has a new method or a method was deleted--this is now probably no good, just invalidate everything now
+                    valid = 0;
+                }
+            }
         }
         if (valid) {
             // if this callee is still valid, add all the backedges

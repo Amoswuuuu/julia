@@ -272,6 +272,7 @@ typedef struct _jl_method_t {
     jl_sym_t *file;
     int32_t line;
     size_t primary_world;
+    size_t deleted_world;
 
     // method's type signature. redundant with TypeMapEntry->specTypes
     jl_value_t *sig;
