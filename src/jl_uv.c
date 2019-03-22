@@ -73,6 +73,20 @@ void jl_init_uv(void)
     JL_MUTEX_INIT(&jl_uv_mutex); // a file-scope initializer can be used instead
 }
 
+static int n_waiters = 0;
+
+void JL_UV_LOCK(void)
+{
+    if (jl_mutex_trylock_nogc(&jl_uv_mutex)) {
+    }
+    else {
+        jl_atomic_fetch_add(&n_waiters, 1);
+        jl_wake_libuv();
+        JL_LOCK_NOGC(&jl_uv_mutex);
+        jl_atomic_fetch_add(&n_waiters, -1);
+    }
+}
+
 void jl_uv_call_close_callback(jl_value_t *val)
 {
     jl_value_t *args[2];
@@ -192,6 +206,19 @@ JL_DLLEXPORT void jl_uv_req_set_data(uv_req_t *req, void *data) { req->data = da
 JL_DLLEXPORT void *jl_uv_handle_data(uv_handle_t *handle) { return handle->data; }
 JL_DLLEXPORT void *jl_uv_write_handle(uv_write_t *req) { return req->handle; }
 
+void jl_try_run_once(uv_loop_t *loop)
+{
+    if (loop && jl_atomic_load(&n_waiters) == 0 && jl_mutex_trylock_nogc(&jl_uv_mutex)) {
+        loop->stop_flag = 0;
+        uv_run(loop, UV_RUN_ONCE);
+        JL_UV_UNLOCK();
+    }
+    else {
+        //JL_UV_LOCK();
+        //JL_UV_UNLOCK();
+    }
+}
+
 JL_DLLEXPORT int jl_run_once(uv_loop_t *loop)
 {
     jl_ptls_t ptls = jl_get_ptls_states();
@@ -204,18 +231,6 @@ JL_DLLEXPORT int jl_run_once(uv_loop_t *loop)
         return r;
     }
     return 0;
-}
-
-JL_DLLEXPORT void jl_run_event_loop(uv_loop_t *loop)
-{
-    jl_ptls_t ptls = jl_get_ptls_states();
-    if (loop) {
-        jl_gc_safepoint_(ptls);
-        JL_UV_LOCK();
-        loop->stop_flag = 0;
-        uv_run(loop,UV_RUN_DEFAULT);
-        JL_UV_UNLOCK();
-    }
 }
 
 JL_DLLEXPORT int jl_process_events(uv_loop_t *loop)

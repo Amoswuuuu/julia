@@ -247,6 +247,8 @@ static jl_task_t *get_next_task(jl_value_t *getsticky)
 }
 
 
+void jl_try_run_once(uv_loop_t *loop);
+
 JL_DLLEXPORT jl_task_t *jl_task_get_next(jl_value_t *getsticky)
 {
     jl_ptls_t ptls = jl_get_ptls_states();
@@ -290,7 +292,7 @@ JL_DLLEXPORT jl_task_t *jl_task_get_next(jl_value_t *getsticky)
         }
         else {
             // for now just have all threads poll during threaded regions
-            jl_process_events(jl_global_event_loop());
+            jl_try_run_once(jl_global_event_loop());
         }
     }
 }
