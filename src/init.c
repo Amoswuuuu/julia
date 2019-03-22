@@ -410,31 +410,23 @@ static void *init_stdio_handle(const char *stdio, uv_os_fd_t fd, int readable)
         break;
     case UV_NAMED_PIPE:
         handle = malloc(sizeof(uv_pipe_t));
-        JL_UV_LOCK();
         if ((err = uv_pipe_init(jl_io_loop, (uv_pipe_t*)handle, 0))) {
-            // JL_UV_UNLOCK() equivalent is done during unwinding
             jl_errorf("error initializing %s in uv_pipe_init: %s (%s %d)", stdio, uv_strerror(err), uv_err_name(err), err);
         }
         if ((err = uv_pipe_open((uv_pipe_t*)handle, fd))) {
-            // JL_UV_UNLOCK() equivalent is done during unwinding
             jl_errorf("error initializing %s in uv_pipe_open: %s (%s %d)", stdio, uv_strerror(err), uv_err_name(err), err);
         }
         ((uv_pipe_t*)handle)->data = NULL;
-        JL_UV_UNLOCK();
         break;
     case UV_TCP:
         handle = malloc(sizeof(uv_tcp_t));
-        JL_UV_LOCK();
         if ((err = uv_tcp_init(jl_io_loop, (uv_tcp_t*)handle))) {
-            // JL_UV_UNLOCK() equivalent is done during unwinding
             jl_errorf("error initializing %s in uv_tcp_init: %s (%s %d)", stdio, uv_strerror(err), uv_err_name(err), err);
         }
         if ((err = uv_tcp_open((uv_tcp_t*)handle, (uv_os_sock_t)fd))) {
-            // JL_UV_UNLOCK() equivalent is done during unwinding
             jl_errorf("error initializing %s in uv_tcp_open: %s (%s %d)", stdio, uv_strerror(err), uv_err_name(err), err);
         }
         ((uv_tcp_t*)handle)->data = NULL;
-        JL_UV_UNLOCK();
         break;
     }
     return handle;
